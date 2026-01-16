@@ -13,7 +13,7 @@ import { GroupedVirtuoso, GroupedVirtuosoHandle } from 'react-virtuoso'
 import ProxyItem from '@renderer/components/proxies/proxy-item'
 import ProxySettingModal from '@renderer/components/proxies/proxy-setting-modal'
 import { IoIosArrowBack } from 'react-icons/io'
-import { MdDoubleArrow, MdOutlineSpeed, MdTune } from 'react-icons/md'
+import { MdDoubleArrow, MdOutlineSpeed, MdTune, MdVisibilityOff } from 'react-icons/md'
 import { useGroups } from '@renderer/hooks/use-groups'
 import CollapseInput from '@renderer/components/base/collapse-input'
 import { includesIgnoreCase } from '@renderer/utils/includes'
@@ -23,7 +23,7 @@ const Proxies: React.FC = () => {
   const { controledMihomoConfig } = useControledMihomoConfig()
   const { mode = 'rule' } = controledMihomoConfig || {}
   const { groups = [], mutate } = useGroups()
-  const { appConfig } = useAppConfig()
+  const { appConfig, patchAppConfig } = useAppConfig()
   const {
     proxyDisplayLayout = 'double',
     groupDisplayLayout = 'double',
@@ -44,9 +44,28 @@ const Proxies: React.FC = () => {
     if (groups.length !== searchValue.length) setSearchValue(Array(groups.length).fill(''))
     groups.forEach((group, index) => {
       if (isOpen[index]) {
-        let groupProxies = group.all.filter(
-          (proxy) => proxy && includesIgnoreCase(proxy.name, searchValue[index])
-        )
+        let groupProxies = group.all.filter((proxy) => {
+          if (!proxy || !includesIgnoreCase(proxy.name, searchValue[index])) {
+            return false
+          }
+          if (appConfig?.hideUnavailableProxies) {
+            // 如果是代理组，保留
+            const isGroup = 'all' in proxy
+            if (isGroup) {
+              return true
+            }
+            // 如果没有历史记录，保留（未测试过）
+            if (!proxy.history || proxy.history.length === 0) {
+              return true
+            }
+            // 如果延迟为0（超时），过滤掉
+            const lastDelay = proxy.history[proxy.history.length - 1].delay
+            if (lastDelay === 0) {
+              return false
+            }
+          }
+          return true
+        })
         const count = Math.floor(groupProxies.length / cols)
         groupCounts.push(groupProxies.length % cols === 0 ? count : count + 1)
         if (proxyDisplayOrder === 'delay') {
@@ -68,7 +87,7 @@ const Proxies: React.FC = () => {
       }
     })
     return { groupCounts, allProxies }
-  }, [groups, isOpen, proxyDisplayOrder, cols, searchValue])
+  }, [groups, isOpen, proxyDisplayOrder, cols, searchValue, appConfig?.hideUnavailableProxies])
 
   const onChangeProxy = useCallback(
     async (group: string, proxy: string): Promise<void> => {
@@ -373,16 +392,34 @@ const Proxies: React.FC = () => {
     <BasePage
       title="代理组"
       header={
-        <Button
-          size="sm"
-          isIconOnly
-          variant="light"
-          className="app-nodrag"
-          title="代理组设置"
-          onPress={() => setIsSettingModalOpen(true)}
-        >
-          <MdTune className="text-lg" />
-        </Button>
+        <>
+          <Button
+            size="sm"
+            isIconOnly
+            variant="light"
+            className="app-nodrag"
+            title={appConfig?.hideUnavailableProxies ? '显示全部节点' : '隐藏超时节点'}
+            onPress={() => {
+              patchAppConfig({
+                hideUnavailableProxies: !appConfig?.hideUnavailableProxies
+              })
+            }}
+          >
+            <MdVisibilityOff
+              className={`text-lg ${appConfig?.hideUnavailableProxies ? 'text-warning' : 'text-foreground-500'}`}
+            />
+          </Button>
+          <Button
+            size="sm"
+            isIconOnly
+            variant="light"
+            className="app-nodrag"
+            title="代理组设置"
+            onPress={() => setIsSettingModalOpen(true)}
+          >
+            <MdTune className="text-lg" />
+          </Button>
+        </>
       }
     >
       {isSettingModalOpen && <ProxySettingModal onClose={() => setIsSettingModalOpen(false)} />}

@@ -85,6 +85,7 @@ interface AppConfig {
   delayTestConcurrency?: number
   delayTestUrl?: string
   delayTestTimeout?: number
+  hideUnavailableProxies?: boolean
   encryptedPassword?: number[]
   controlDns?: boolean
   controlSniff?: boolean
