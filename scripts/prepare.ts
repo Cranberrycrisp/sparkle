@@ -300,14 +300,14 @@ const resolveSparkleService = () => {
 
   return resolveResource({
     file: `sparkle-service${ext}`,
-    downloadURL: `https://github.com/UruhaLushia/sparkle-service/releases/download/pre-release/${base}${ext}`,
+    downloadURL: `https://github.com/Cranberrycrisp/sparkle-service/releases/download/pre-release/${base}${ext}`,
     needExecutable: true
   })
 }
 const resolveRunner = () =>
   resolveResource({
     file: 'sparkle-run.exe',
-    downloadURL: `https://github.com/xishang0128/sparkle-run/releases/download/${arch}/sparkle-run.exe`
+    downloadURL: `https://github.com/Cranberrycrisp/sparkle-run/releases/download/${arch}/sparkle-run.exe`
   })
 
 const resolveMonitor = async () => {
@@ -317,7 +317,7 @@ const resolveMonitor = async () => {
     fs.mkdirSync(tempDir, { recursive: true })
   }
   await downloadFile(
-    `https://github.com/xishang0128/sparkle-run/releases/download/monitor/${arch}.zip`,
+    `https://github.com/Cranberrycrisp/sparkle-run/releases/download/monitor/${arch}.zip`,
     tempZip
   )
   const zip = new AdmZip(tempZip)

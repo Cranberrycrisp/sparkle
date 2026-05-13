@@ -3,11 +3,8 @@
   "version": "1.26.4",
   "description": "Sparkle",
   "main": "./out/main/index.js",
-  "author": {
-    "name": "xishang0128",
-    "email": "xishang02@gmail.com"
-  },
-  "homepage": "https://github.com/xishang0128/sparkle",
+  "author": "Cranberrycrisp",
+  "homepage": "https://github.com/Cranberrycrisp/sparkle",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",

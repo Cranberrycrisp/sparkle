@@ -15,7 +15,7 @@ import { GroupedVirtuoso, GroupedVirtuosoHandle } from 'react-virtuoso'
 import ProxyItem from '@renderer/components/proxies/proxy-item'
 import ProxySettingDrawer from '@renderer/components/proxies/proxy-setting-drawer'
 import { IoIosArrowBack } from 'react-icons/io'
-import { MdDoubleArrow, MdOutlineSpeed, MdTune } from 'react-icons/md'
+import { MdDoubleArrow, MdOutlineSpeed, MdTune, MdVisibilityOff } from 'react-icons/md'
 import { useGroups } from '@renderer/hooks/use-groups'
 import CollapseInput from '@renderer/components/base/collapse-input'
 import { includesIgnoreCase } from '@renderer/utils/includes'
@@ -38,6 +38,18 @@ function compareProxyDelay(a: ProxyLike, b: ProxyLike): number {
   if (delayA === 0) return 1
   if (delayB === 0) return -1
   return delayA - delayB
+}
+
+function isProxyVisible(
+  proxy: ProxyLike | undefined,
+  searchText: string,
+  hideUnavailableProxies: boolean
+): proxy is ProxyLike {
+  if (!proxy || (searchText && !includesIgnoreCase(proxy.name, searchText))) return false
+  if (!hideUnavailableProxies) return true
+  if ('all' in proxy) return true
+  if (proxy.history.length === 0) return true
+  return proxy.history[proxy.history.length - 1].delay !== 0
 }
 
 interface GroupHeaderProps {
@@ -172,7 +184,7 @@ const Proxies: React.FC = () => {
   const { controledMihomoConfig } = useControledMihomoConfig()
   const { mode = 'rule' } = controledMihomoConfig || {}
   const { groups = [], mutate } = useGroups()
-  const { appConfig } = useAppConfig()
+  const { appConfig, patchAppConfig } = useAppConfig()
   const {
     proxyDisplayLayout = 'double',
     groupDisplayLayout = 'double',
@@ -185,7 +197,8 @@ const Proxies: React.FC = () => {
     delayTestUrlScope = 'group',
     delayTestUseGroupApi = false,
     delayTestConcurrency,
-    rememberProxyGroupOpenState = false
+    rememberProxyGroupOpenState = false,
+    hideUnavailableProxies = false
   } = appConfig || {}
   const [cols, setCols] = useState(1)
   const [isOpen, setIsOpen] = useState<boolean[]>(() => {
@@ -275,9 +288,10 @@ const Proxies: React.FC = () => {
     groups.forEach((group, index) => {
       if (isOpenContent[index]) {
         const searchText = searchValue[index] || ''
-        let groupProxies = searchText
-          ? group.all.filter((proxy) => proxy && includesIgnoreCase(proxy.name, searchText))
-          : (group.all as ProxyLike[])
+        let groupProxies =
+          searchText || hideUnavailableProxies
+            ? group.all.filter((proxy) => isProxyVisible(proxy, searchText, hideUnavailableProxies))
+            : (group.all as ProxyLike[])
 
         if (proxyDisplayOrder === 'delay') {
           groupProxies = [...groupProxies].sort(compareProxyDelay)
@@ -294,7 +308,7 @@ const Proxies: React.FC = () => {
       }
     })
     return { groupCounts, allProxies }
-  }, [groups, isOpenContent, proxyDisplayOrder, cols, searchValue])
+  }, [groups, isOpenContent, proxyDisplayOrder, cols, searchValue, hideUnavailableProxies])
 
   const onChangeProxy = useCallback(
     async (group: string, proxy: string): Promise<void> => {
@@ -340,7 +354,14 @@ const Proxies: React.FC = () => {
       if (!group) return
 
       const openedProxies = allProxies[index] || EMPTY_PROXIES
-      const proxies = openedProxies.length > 0 ? openedProxies : group.all
+      const searchText = searchValue[index] || ''
+      const proxies = hideUnavailableProxies
+        ? searchText
+          ? group.all.filter((proxy) => proxy && includesIgnoreCase(proxy.name, searchText))
+          : group.all
+        : openedProxies.length > 0
+          ? openedProxies
+          : group.all
       if (proxies.length === 0) return
 
       if (openedProxies.length === 0) {
@@ -389,6 +410,8 @@ const Proxies: React.FC = () => {
       groups,
       delayTestUseGroupApi,
       delayTestConcurrency,
+      hideUnavailableProxies,
+      searchValue,
       mutate,
       getDelayTestUrl,
       setGroupDelaying
@@ -669,18 +692,36 @@ const Proxies: React.FC = () => {
     <BasePage
       title="代理组"
       header={
-        <Button
-          size="sm"
-          isIconOnly
-          variant="light"
-          className="app-nodrag"
-          onPress={() => {
-            setIsSettingDrawerOpen(true)
-            setSettingDrawerReopenSignal((signal) => signal + 1)
-          }}
-        >
-          <MdTune className="text-lg" />
-        </Button>
+        <>
+          <Button
+            size="sm"
+            isIconOnly
+            variant="light"
+            className="app-nodrag"
+            aria-label={hideUnavailableProxies ? '显示全部节点' : '隐藏超时节点'}
+            title={hideUnavailableProxies ? '显示全部节点' : '隐藏超时节点'}
+            onPress={() => {
+              void patchAppConfig({ hideUnavailableProxies: !hideUnavailableProxies })
+            }}
+          >
+            <MdVisibilityOff
+              className={`text-lg ${hideUnavailableProxies ? 'text-warning' : 'text-foreground-500'}`}
+            />
+          </Button>
+          <Button
+            size="sm"
+            isIconOnly
+            variant="light"
+            className="app-nodrag"
+            aria-label="代理组设置"
+            onPress={() => {
+              setIsSettingDrawerOpen(true)
+              setSettingDrawerReopenSignal((signal) => signal + 1)
+            }}
+          >
+            <MdTune className="text-lg" />
+          </Button>
+        </>
       }
     >
       {isSettingDrawerOpen && (

@@ -63,7 +63,7 @@ linux:
     - deb
     - rpm
     - pacman
-  maintainer: xishang0128 <xishang02@gmail.com>
+  maintainer: Cranberrycrisp
   category: Utility
   artifactName: ${name}-linux-${version}-${arch}.${ext}
 deb:

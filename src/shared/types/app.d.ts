@@ -109,6 +109,7 @@ interface AppConfig {
   delayTestUrl?: string
   delayTestUrlScope?: 'group' | 'global'
   delayTestTimeout?: number
+  hideUnavailableProxies?: boolean
   encryptedPassword?: number[]
   rememberProxyGroupOpenState?: boolean
   controlDns?: boolean
